@@ -1,0 +1,125 @@
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
+import 'models/clipboard_item.dart';
+import 'providers/auth_provider.dart';
+import 'providers/server_sync_provider.dart';
+import 'services/clipboard_service.dart';
+import 'pages/login_page.dart';
+import 'pages/main_page.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化Hive
+  await Hive.initFlutter();
+
+  // 注册Hive适配器
+  Hive.registerAdapter(ClipboardItemAdapter());
+  Hive.registerAdapter(ClipboardTypeAdapter());
+
+  // 打开Hive盒子
+  await Hive.openBox<ClipboardItem>('clipboard_items');
+
+  // 清理过长的剪贴板内容
+  await ClipboardService.instance.cleanupLongContent();
+
+  runApp(const ClipboardApp());
+}
+
+class ClipboardApp extends StatelessWidget {
+  const ClipboardApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => AuthProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => ServerSyncProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => ClipboardService.instance,
+        ),
+      ],
+      child: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          return MaterialApp(
+            title: '剪贴板同步工具',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                brightness: Brightness.light,
+              ),
+              useMaterial3: true,
+              appBarTheme: const AppBarTheme(
+                centerTitle: true,
+                elevation: 0,
+              ),
+            ),
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+              appBarTheme: const AppBarTheme(
+                centerTitle: true,
+                elevation: 0,
+              ),
+            ),
+            themeMode: ThemeMode.system,
+
+            // 根据认证状态决定显示哪个页面
+            home: authProvider.isLoading
+                ? const SplashScreen()
+                : authProvider.isAuthenticated
+                    ? const MainPage()
+                    : const LoginPage(),
+
+            // 路由配置
+            routes: {
+              '/login': (context) => const LoginPage(),
+              '/main': (context) => const MainPage(),
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+// 启动画面
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.content_paste,
+              size: 80,
+              color: Colors.blue,
+            ),
+            SizedBox(height: 24),
+            Text(
+              '剪贴板同步工具',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 16),
+            CircularProgressIndicator(),
+          ],
+        ),
+      ),
+    );
+  }
+}
