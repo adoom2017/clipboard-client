@@ -50,10 +50,6 @@ class ServerClipboardItem {
   final String id;
   final String content;
   final String type;
-  @JsonKey(name: 'is_synced')
-  final bool isSynced;
-  @JsonKey(name: 'synced_at')
-  final DateTime? syncedAt;
   final DateTime timestamp;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
@@ -62,8 +58,6 @@ class ServerClipboardItem {
     required this.id,
     required this.content,
     required this.type,
-    required this.isSynced,
-    this.syncedAt,
     required this.timestamp,
     required this.createdAt,
   });

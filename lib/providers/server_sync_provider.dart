@@ -117,12 +117,12 @@ class ServerSyncProvider extends ChangeNotifier {
         if (!localContentKeys.contains(contentKey)) {
           // 创建本地剪贴板项目
           final localItem = ClipboardItem(
-            id: serverItem.id,
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
             content: serverItem.content,
             type: _parseClipboardType(serverItem.type),
             timestamp: serverItem.timestamp,
             isSynced: true, // 从服务器下载的项目标记为已同步
-            syncedAt: DateTime.now().toIso8601String(),
+            serverId: serverItem.id, // 设置服务器ID用于后续删除
           );
 
           // 添加到本地数据库
@@ -315,13 +315,13 @@ class ServerSyncProvider extends ChangeNotifier {
       final localItem = validItems[i];
       final syncedItem = response.synced[i];
 
-      // 更新本地项目状态
+      // 更新本地项目状态 - 成功同步到服务器的项目标记为已同步
       final updatedItem = ClipboardItem(
         id: localItem.id,
         content: localItem.content,
         type: localItem.type,
         timestamp: localItem.timestamp,
-        isSynced: true,
+        isSynced: true, // 成功上传到服务器的项目都标记为已同步
         serverId: syncedItem.id,
       );
 
@@ -347,7 +347,7 @@ class ServerSyncProvider extends ChangeNotifier {
           content: serverItem.content,
           type: _parseClipboardType(serverItem.type),
           timestamp: serverItem.timestamp,
-          isSynced: true,
+          isSynced: true, // 从服务器下载的项目都标记为已同步
           serverId: serverItem.id,
         );
 
@@ -359,7 +359,7 @@ class ServerSyncProvider extends ChangeNotifier {
           content: existingItem.content,
           type: existingItem.type,
           timestamp: existingItem.timestamp,
-          isSynced: true,
+          isSynced: true, // 服务器存在的项目标记为已同步
           serverId: serverItem.id,
         );
 

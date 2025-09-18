@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/clipboard_item.dart';
 import '../services/clipboard_service.dart';
+import '../providers/server_sync_provider.dart';
 
 class SearchDelegate extends MaterialPageRoute<ClipboardItem?> {
   SearchDelegate()
@@ -140,47 +142,53 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildSearchResultItem(ClipboardItem item) {
     final query = _searchController.text.toLowerCase();
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8.0),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: item.isSynced ? Colors.green : Colors.orange,
-          child: Icon(
-            item.isSynced ? Icons.cloud_done : Icons.content_paste,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-        title: RichText(
-          text: _buildHighlightedText(
-            item.preview,
-            query,
-            Theme.of(context).textTheme.bodyLarge,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(item.formattedTime),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!item.isSynced)
-              IconButton(
-                icon: const Icon(Icons.cloud_upload, size: 20),
-                onPressed: () => _syncItem(item),
-                tooltip: '同步到服务器',
+    return Consumer<ServerSyncProvider>(
+      builder: (context, syncProvider, child) {
+        final isSynced = syncProvider.isItemSynced(item);
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8.0),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: isSynced ? Colors.green : Colors.orange,
+              child: Icon(
+                isSynced ? Icons.cloud_done : Icons.content_paste,
+                color: Colors.white,
+                size: 20,
               ),
-            IconButton(
-              icon: const Icon(Icons.delete, size: 20),
-              onPressed: () => _deleteItem(item),
-              tooltip: '删除',
             ),
-          ],
-        ),
-        onTap: () {
-          Navigator.of(context).pop(item);
-        },
-      ),
+            title: RichText(
+              text: _buildHighlightedText(
+                item.preview,
+                query,
+                Theme.of(context).textTheme.bodyLarge,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(item.formattedTime),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isSynced)
+                  IconButton(
+                    icon: const Icon(Icons.cloud_upload, size: 20),
+                    onPressed: () => _syncItem(item),
+                    tooltip: '同步到服务器',
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.delete, size: 20),
+                  onPressed: () => _deleteItem(item),
+                  tooltip: '删除',
+                ),
+              ],
+            ),
+            onTap: () {
+              Navigator.of(context).pop(item);
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -239,7 +247,7 @@ class _SearchPageState extends State<SearchPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('确认删除'),
-        content: const Text('确定要删除这条剪贴板记录吗？'),
+        content: const Text('确定要删除这条剪贴板记录吗？这将同时删除本地和云端的数据。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -247,6 +255,9 @@ class _SearchPageState extends State<SearchPage> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
             child: const Text('删除'),
           ),
         ],
@@ -255,14 +266,28 @@ class _SearchPageState extends State<SearchPage> {
 
     if (confirmed == true) {
       try {
-        await _clipboardService.deleteItem(item);
-        setState(() {
-          _searchResults.remove(item);
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('已删除剪贴板记录')),
-          );
+        final syncProvider =
+            Provider.of<ServerSyncProvider>(context, listen: false);
+        final success = await syncProvider.deleteItem(item);
+
+        if (success) {
+          setState(() {
+            _searchResults.remove(item);
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('已删除剪贴板记录（本地和云端）')),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('删除失败: ${syncProvider.errorMessage ?? "未知错误"}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {

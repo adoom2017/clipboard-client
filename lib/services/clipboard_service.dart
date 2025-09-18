@@ -117,7 +117,7 @@ class ClipboardService extends ChangeNotifier {
   /// 标记项目为已同步
   Future<void> markAsSynced(ClipboardItem item) async {
     item.isSynced = true;
-    item.syncedAt = DateTime.now().toIso8601String();
+    // 不再设置syncedAt字段，因为服务器端已移除该字段
     await item.save();
     notifyListeners(); // 通知UI更新
   }
@@ -127,7 +127,7 @@ class ClipboardService extends ChangeNotifier {
     item.content = newContent;
     item.timestamp = DateTime.now();
     item.isSynced = false; // 更新后需要重新同步
-    item.syncedAt = null;
+    // 不再设置syncedAt字段
     await item.save();
     notifyListeners(); // 通知UI更新
   }

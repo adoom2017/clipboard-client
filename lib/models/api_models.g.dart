@@ -42,10 +42,6 @@ ServerClipboardItem _$ServerClipboardItemFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       content: json['content'] as String,
       type: json['type'] as String,
-      isSynced: json['is_synced'] as bool,
-      syncedAt: json['synced_at'] == null
-          ? null
-          : DateTime.parse(json['synced_at'] as String),
       timestamp: DateTime.parse(json['timestamp'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
@@ -56,8 +52,6 @@ Map<String, dynamic> _$ServerClipboardItemToJson(
       'id': instance.id,
       'content': instance.content,
       'type': instance.type,
-      'is_synced': instance.isSynced,
-      'synced_at': instance.syncedAt?.toIso8601String(),
       'timestamp': instance.timestamp.toIso8601String(),
       'created_at': instance.createdAt.toIso8601String(),
     };
