@@ -100,7 +100,8 @@ class _LoginPageState extends State<LoginPage> {
           ),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );
@@ -135,7 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                     expandedTitleScale: 1.0,
                   ),
                 ),
-                
+
                 // 登录表单内容
                 SliverToBoxAdapter(
                   child: Padding(
@@ -155,7 +156,8 @@ class _LoginPageState extends State<LoginPage> {
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF007AFF).withOpacity(0.3),
+                                    color: const Color(0xFF007AFF)
+                                        .withOpacity(0.3),
                                     blurRadius: 20,
                                     offset: const Offset(0, 8),
                                   ),
@@ -216,7 +218,9 @@ class _LoginPageState extends State<LoginPage> {
                             obscureText: _obscurePassword,
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                _obscurePassword
+                                    ? Icons.visibility_off_rounded
+                                    : Icons.visibility_rounded,
                                 color: const Color(0xFF8E8E93),
                               ),
                               onPressed: () {
@@ -248,7 +252,8 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.error_rounded, color: Colors.red.shade700, size: 20),
+                                  Icon(Icons.error_rounded,
+                                      color: Colors.red.shade700, size: 20),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
@@ -260,7 +265,8 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                   ),
                                   IconButton(
-                                    icon: Icon(Icons.close_rounded, size: 18, color: Colors.red.shade700),
+                                    icon: Icon(Icons.close_rounded,
+                                        size: 18, color: Colors.red.shade700),
                                     onPressed: authProvider.clearError,
                                     visualDensity: VisualDensity.compact,
                                   ),
@@ -282,14 +288,16 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF007AFF).withOpacity(0.3),
+                                  color:
+                                      const Color(0xFF007AFF).withOpacity(0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
                             child: ElevatedButton(
-                              onPressed: authProvider.isLoading ? null : _handleSubmit,
+                              onPressed:
+                                  authProvider.isLoading ? null : _handleSubmit,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
@@ -303,7 +311,9 @@ class _LoginPageState extends State<LoginPage> {
                                       height: 24,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.5,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
                                       ),
                                     )
                                   : Text(
@@ -417,14 +427,10 @@ class _ServerStatusIndicatorState extends State<_ServerStatusIndicator> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _isServerOnline! 
-            ? Colors.green.shade50 
-            : Colors.red.shade50,
+        color: _isServerOnline! ? Colors.green.shade50 : Colors.red.shade50,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _isServerOnline! 
-              ? Colors.green.shade200 
-              : Colors.red.shade200,
+          color: _isServerOnline! ? Colors.green.shade200 : Colors.red.shade200,
         ),
       ),
       child: Row(
@@ -443,8 +449,8 @@ class _ServerStatusIndicatorState extends State<_ServerStatusIndicator> {
           Text(
             _isServerOnline! ? '服务器在线' : '服务器离线',
             style: TextStyle(
-              color: _isServerOnline! 
-                  ? Colors.green.shade700 
+              color: _isServerOnline!
+                  ? Colors.green.shade700
                   : Colors.red.shade700,
               fontSize: 12,
               fontWeight: FontWeight.w500,
