@@ -158,6 +158,9 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
   void _handleSync(ServerSyncProvider syncProvider) async {
     if (_isLoading || syncProvider.isItemSynced(widget.item)) return;
 
+    // 在异步操作前获取context相关的引用
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     setState(() {
       _isLoading = true;
     });
@@ -166,7 +169,7 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
       final success = await syncProvider.syncSingleClipboardItem(widget.item);
 
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text('同步成功'),
             backgroundColor: Colors.green,
@@ -174,7 +177,7 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
           ),
         );
       } else if (!success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('同步失败: ${syncProvider.errorMessage ?? '未知错误'}'),
             backgroundColor: Colors.red,
@@ -183,7 +186,7 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('同步出错: $e'),
             backgroundColor: Colors.red,

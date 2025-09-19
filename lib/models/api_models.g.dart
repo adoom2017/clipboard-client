@@ -135,8 +135,8 @@ ClipboardStatistics _$ClipboardStatisticsFromJson(Map<String, dynamic> json) =>
       unsyncedItems: (json['unsynced_items'] as num).toInt(),
       totalContentSize: (json['total_content_size'] as num).toInt(),
       typeDistribution: Map<String, int>.from(json['type_distribution'] as Map),
-      recentActivity: (json['recent_activity'] as List<dynamic>)
-          .map((e) => ActivityData.fromJson(e as Map<String, dynamic>))
+      recentActivity: (json['recent_activity'] as List<dynamic>?)
+          ?.map((e) => ActivityData.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 

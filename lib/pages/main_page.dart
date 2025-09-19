@@ -612,17 +612,6 @@ class _MainPageState extends State<MainPage>
     );
   }
 
-  IconData _getTypeIcon(ClipboardType type) {
-    switch (type) {
-      case ClipboardType.text:
-        return Icons.text_fields;
-      case ClipboardType.image:
-        return Icons.image;
-      case ClipboardType.file:
-        return Icons.file_present;
-    }
-  }
-
   String _formatTime(DateTime time) {
     final now = DateTime.now();
     final difference = now.difference(time);
@@ -754,19 +743,20 @@ class _MainPageState extends State<MainPage>
   Future<void> _deleteItem(ClipboardItem item) async {
     final syncProvider =
         Provider.of<ServerSyncProvider>(context, listen: false);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     final success = await syncProvider.deleteItem(item);
 
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text('项目删除成功'),
             duration: Duration(seconds: 2),
           ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('删除失败: ${syncProvider.errorMessage ?? "未知错误"}'),
             backgroundColor: Colors.red,

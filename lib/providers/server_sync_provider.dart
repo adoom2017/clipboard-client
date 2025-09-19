@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/clipboard_item.dart';
@@ -278,93 +277,6 @@ class ServerSyncProvider extends ChangeNotifier {
       return false;
     } finally {
       _setSyncing(false);
-    }
-  }
-
-  // 上传本地数据到服务器
-  Future<void> _uploadToServer(List<ClipboardItem> items) async {
-    // 过滤掉过长的内容项目（超过500KB的内容）
-    const maxContentLength = 512 * 1024; // 512KB
-    final validItems =
-        items.where((item) => item.content.length <= maxContentLength).toList();
-
-    if (validItems.length < items.length) {
-      debugPrint('过滤掉 ${items.length - validItems.length} 个过长的剪贴板项目');
-    }
-
-    if (validItems.isEmpty) {
-      debugPrint('没有有效的项目需要同步');
-      return;
-    }
-
-    final syncItems = validItems
-        .map((item) => SyncClipboardItem(
-              type: item.type.name,
-              content: item.content,
-              timestamp: item.timestamp,
-            ))
-        .toList();
-
-    final response = await _apiService.batchSync(
-      deviceId: _deviceId,
-      items: syncItems,
-    );
-
-    // 标记本地项目为已同步
-    for (int i = 0; i < validItems.length && i < response.synced.length; i++) {
-      final localItem = validItems[i];
-      final syncedItem = response.synced[i];
-
-      // 更新本地项目状态 - 成功同步到服务器的项目标记为已同步
-      final updatedItem = ClipboardItem(
-        id: localItem.id,
-        content: localItem.content,
-        type: localItem.type,
-        timestamp: localItem.timestamp,
-        isSynced: true, // 成功上传到服务器的项目都标记为已同步
-        serverId: syncedItem.id,
-      );
-
-      await _clipboardService.updateItemComplete(updatedItem);
-    }
-  }
-
-  // 从服务器下载数据
-  Future<void> _downloadFromServer() async {
-    final response = await _apiService.getClipboardItems(
-      page: 1,
-      pageSize: 100, // 获取最近100个项目
-    );
-
-    for (final serverItem in response.items) {
-      // 检查本地是否已存在该项目
-      final existingItem = _clipboardService.getItemByServerId(serverItem.id);
-
-      if (existingItem == null) {
-        // 创建新的本地项目
-        final newItem = ClipboardItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          content: serverItem.content,
-          type: _parseClipboardType(serverItem.type),
-          timestamp: serverItem.timestamp,
-          isSynced: true, // 从服务器下载的项目都标记为已同步
-          serverId: serverItem.id,
-        );
-
-        await _clipboardService.addItem(newItem);
-      } else if (!existingItem.isSynced) {
-        // 更新现有项目的同步状态
-        final updatedItem = ClipboardItem(
-          id: existingItem.id,
-          content: existingItem.content,
-          type: existingItem.type,
-          timestamp: existingItem.timestamp,
-          isSynced: true, // 服务器存在的项目标记为已同步
-          serverId: serverItem.id,
-        );
-
-        await _clipboardService.updateItemComplete(updatedItem);
-      }
     }
   }
 

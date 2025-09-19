@@ -164,7 +164,7 @@ class ClipboardStatistics {
   @JsonKey(name: 'type_distribution')
   final Map<String, int> typeDistribution;
   @JsonKey(name: 'recent_activity')
-  final List<ActivityData> recentActivity;
+  final List<ActivityData>? recentActivity;
 
   const ClipboardStatistics({
     required this.totalItems,
@@ -172,7 +172,7 @@ class ClipboardStatistics {
     required this.unsyncedItems,
     required this.totalContentSize,
     required this.typeDistribution,
-    required this.recentActivity,
+    this.recentActivity,
   });
 
   factory ClipboardStatistics.fromJson(Map<String, dynamic> json) =>

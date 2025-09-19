@@ -236,13 +236,23 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _syncItem(ClipboardItem item) async {
+    // 在异步操作前获取引用
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     // 这里可以实现同步逻辑
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('同步功能待实现')),
-    );
+    if (mounted) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(content: Text('同步功能待实现')),
+      );
+    }
   }
 
   void _deleteItem(ClipboardItem item) async {
+    // 在异步操作前获取所有需要的引用
+    final syncProvider =
+        Provider.of<ServerSyncProvider>(context, listen: false);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -266,22 +276,22 @@ class _SearchPageState extends State<SearchPage> {
 
     if (confirmed == true) {
       try {
-        final syncProvider =
-            Provider.of<ServerSyncProvider>(context, listen: false);
         final success = await syncProvider.deleteItem(item);
 
         if (success) {
-          setState(() {
-            _searchResults.remove(item);
-          });
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            setState(() {
+              _searchResults.remove(item);
+            });
+          }
+          if (mounted) {
+            scaffoldMessenger.showSnackBar(
               const SnackBar(content: Text('已删除剪贴板记录（本地和云端）')),
             );
           }
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text('删除失败: ${syncProvider.errorMessage ?? "未知错误"}'),
                 backgroundColor: Colors.red,
@@ -291,7 +301,7 @@ class _SearchPageState extends State<SearchPage> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(
               content: Text('删除失败: $e'),
               backgroundColor: Colors.red,
