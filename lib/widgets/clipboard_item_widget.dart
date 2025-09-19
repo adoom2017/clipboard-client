@@ -31,127 +31,214 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
         // 使用服务器对比来检查同步状态
         final isSynced = syncProvider.isItemSynced(widget.item);
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8.0),
-          elevation: 2,
-          child: InkWell(
+        return Container(
+          margin: EdgeInsets.zero,
+          decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            onTap: () => _showItemDetails(context, syncProvider),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header row with status and actions
-                  Row(
-                    children: [
-                      // Status indicator
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isSynced ? Colors.green : Colors.orange,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Time stamp
-                      Expanded(
-                        child: Text(
-                          widget.item.formattedTime,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                        ),
-                      ),
-                      // Action buttons
-                      if (!isSynced) ...[
-                        if (_isLoading)
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        else
-                          IconButton(
-                            icon: const Icon(Icons.cloud_upload, size: 20),
-                            onPressed: () => _handleSync(syncProvider),
-                            tooltip: '同步到服务器',
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 32,
-                              minHeight: 32,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _showItemDetails(context, syncProvider),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header row with time and status
+                    Row(
+                      children: [
+                        // Time stamp
+                        Expanded(
+                          child: Text(
+                            widget.item.formattedTime,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[600],
                             ),
                           ),
+                        ),
+                        // Sync status indicator
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSynced
+                                ? const Color(0xFF34C759).withOpacity(0.1)
+                                : const Color(0xFFFF9500).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isSynced
+                                      ? const Color(0xFF34C759)
+                                      : const Color(0xFFFF9500),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                isSynced ? '已同步' : '待同步',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: isSynced
+                                      ? const Color(0xFF34C759)
+                                      : const Color(0xFFFF9500),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
-                      IconButton(
-                        icon: const Icon(Icons.content_copy, size: 20),
-                        onPressed: _copyToClipboard,
-                        tooltip: '复制到剪贴板',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, size: 20),
-                        onPressed: widget.onDelete,
-                        tooltip: '删除',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Content preview
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isExpanded = !_isExpanded;
-                      });
-                    },
-                    child: Text(
-                      _isExpanded ? widget.item.content : widget.item.preview,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      maxLines: _isExpanded ? null : 2,
-                      overflow: _isExpanded ? null : TextOverflow.ellipsis,
                     ),
-                  ),
-                  // Expand/collapse indicator
-                  if (widget.item.content.length > 100)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(
-                            _isExpanded ? '收起' : '展开',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).primaryColor,
+                    const SizedBox(height: 12),
+                    // Content preview with better typography
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isExpanded = !_isExpanded;
+                        });
+                      },
+                      child: Text(
+                        _isExpanded ? widget.item.content : widget.item.preview,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          height: 1.4,
+                          color: Colors.black87,
+                        ),
+                        maxLines: _isExpanded ? null : 3,
+                        overflow: _isExpanded ? null : TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // Action buttons row
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        // Expand/collapse indicator
+                        if (widget.item.content.length > 100)
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isExpanded = !_isExpanded;
+                                });
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _isExpanded
+                                        ? Icons.keyboard_arrow_up_rounded
+                                        : Icons.keyboard_arrow_down_rounded,
+                                    size: 16,
+                                    color: const Color(0xFF007AFF),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _isExpanded ? '收起' : '展开',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF007AFF),
+                                      fontWeight: FontWeight.w500,
                                     ),
-                          ),
-                          Icon(
-                            _isExpanded
-                                ? Icons.keyboard_arrow_up
-                                : Icons.keyboard_arrow_down,
-                            size: 16,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                        ],
-                      ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          const Spacer(),
+                        // Action buttons
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!isSynced) ...[
+                              if (_isLoading)
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  padding: const EdgeInsets.all(6),
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFF007AFF),
+                                    ),
+                                  ),
+                                )
+                              else
+                                _buildActionButton(
+                                  icon: Icons.cloud_upload_rounded,
+                                  onPressed: () => _handleSync(syncProvider),
+                                  tooltip: '同步到服务器',
+                                  color: const Color(0xFF007AFF),
+                                ),
+                              const SizedBox(width: 8),
+                            ],
+                            _buildActionButton(
+                              icon: Icons.content_copy_rounded,
+                              onPressed: _copyToClipboard,
+                              tooltip: '复制到剪贴板',
+                              color: const Color(0xFF34C759),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildActionButton(
+                              icon: Icons.delete_outline_rounded,
+                              onPressed: widget.onDelete,
+                              tooltip: '删除',
+                              color: const Color(0xFFFF3B30),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  // 构建苹果风格的操作按钮
+  Widget _buildActionButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required String tooltip,
+    required Color color,
+  }) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onPressed,
+          child: Icon(
+            icon,
+            size: 18,
+            color: color,
+          ),
+        ),
+      ),
     );
   }
 

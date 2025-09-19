@@ -128,110 +128,357 @@ class _MainPageState extends State<MainPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('剪贴板同步工具'),
-        actions: [
-          // 剪贴板监听状态指示器
-          IconButton(
-            icon: Icon(
-              _isMonitoring ? Icons.visibility : Icons.visibility_off,
-              color: _isMonitoring ? Colors.green : Colors.grey,
-            ),
-            onPressed: _toggleMonitoring,
-            tooltip: _isMonitoring ? '剪贴板监听中 (点击停止)' : '剪贴板已停止 (点击开始)',
-          ),
-          // 同步状态指示器
-          Consumer<ServerSyncProvider>(
-            builder: (context, syncProvider, child) {
-              if (syncProvider.isSyncing) {
-                return const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            // 苹果风格的大标题导航栏
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: false,
+              pinned: true,
+              snap: false,
+              elevation: 0,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+                title: const Text(
+                  '剪贴板',
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
-                );
-              }
-              return IconButton(
-                icon: Icon(
-                  Icons.cloud_sync,
-                  color: syncProvider.lastSyncTime != null
-                      ? Colors.green
-                      : Colors.grey,
                 ),
-                onPressed: () => syncProvider.syncWithServer(),
-                tooltip: syncProvider.lastSyncTime != null
-                    ? '最后同步: ${_formatTime(syncProvider.lastSyncTime!)}'
-                    : '点击同步',
-              );
-            },
-          ),
-          // 用户菜单
-          PopupMenuButton<String>(
-            onSelected: _handleMenuSelection,
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'profile',
+              ),
+              actions: [
+                // 剪贴板监听状态指示器
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: _buildStatusButton(
+                    icon: _isMonitoring
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                    color:
+                        _isMonitoring ? const Color(0xFF34C759) : Colors.grey,
+                    onTap: _toggleMonitoring,
+                    tooltip: _isMonitoring ? '剪贴板监听中' : '剪贴板已停止',
+                  ),
+                ),
+                // 同步状态指示器
+                Consumer<ServerSyncProvider>(
+                  builder: (context, syncProvider, child) {
+                    if (syncProvider.isSyncing) {
+                      return Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.all(12),
+                        child: const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF007AFF)),
+                          ),
+                        ),
+                      );
+                    }
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      child: _buildStatusButton(
+                        icon: Icons.cloud_sync_rounded,
+                        color: syncProvider.lastSyncTime != null
+                            ? const Color(0xFF007AFF)
+                            : Colors.grey,
+                        onTap: () => syncProvider.syncWithServer(),
+                        tooltip: syncProvider.lastSyncTime != null
+                            ? '最后同步: ${_formatTime(syncProvider.lastSyncTime!)}'
+                            : '点击同步',
+                      ),
+                    );
+                  },
+                ),
+                // 用户菜单
+                Container(
+                  margin: const EdgeInsets.only(right: 16),
+                  child: _buildStatusButton(
+                    icon: Icons.person_outline_rounded,
+                    color: Colors.grey,
+                    onTap: () => _showUserMenu(context),
+                    tooltip: '用户菜单',
+                  ),
+                ),
+              ],
+            ),
+            // 苹果风格的分段控制器
+            SliverToBoxAdapter(
+              child: Container(
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 child: Row(
                   children: [
-                    const Icon(Icons.person),
-                    const SizedBox(width: 8),
-                    Consumer<AuthProvider>(
-                      builder: (context, authProvider, child) {
-                        return Text(authProvider.currentUser?.username ?? '用户');
-                      },
+                    Expanded(
+                      child: _buildSegmentButton(
+                        '剪贴板',
+                        Icons.content_paste_rounded,
+                        0,
+                        _tabController.index == 0,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSegmentButton(
+                        '同步',
+                        Icons.sync_rounded,
+                        1,
+                        _tabController.index == 1,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSegmentButton(
+                        '统计',
+                        Icons.bar_chart_rounded,
+                        2,
+                        _tabController.index == 2,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const PopupMenuItem(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings),
-                    SizedBox(width: 8),
-                    Text('设置'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('登出'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.content_paste), text: '剪贴板'),
-            Tab(icon: Icon(Icons.sync), text: '同步'),
-            Tab(icon: Icon(Icons.bar_chart), text: '统计'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
+            ),
+          ];
+        },
+        body: [
           _buildClipboardTab(),
           _buildSyncTab(),
           _buildStatisticsTab(),
-        ],
+        ][_tabController.index],
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: _tabController.index == 0
-          ? FloatingActionButton(
-              onPressed: _toggleMonitoring,
-              tooltip: _isMonitoring ? '停止监听' : '开始监听',
-              child: Icon(_isMonitoring ? Icons.pause : Icons.play_arrow),
+          ? Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF007AFF).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                onPressed: _toggleMonitoring,
+                tooltip: _isMonitoring ? '停止监听' : '开始监听',
+                backgroundColor: const Color(0xFF007AFF),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _isMonitoring
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
+                    key: ValueKey(_isMonitoring),
+                    size: 28,
+                  ),
+                ),
+              ),
             )
           : null,
+    );
+  }
+
+  // 构建苹果风格的状态按钮
+  Widget _buildStatusButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    required String tooltip,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Icon(
+          icon,
+          color: color,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  // 构建苹果风格的分段按钮
+  Widget _buildSegmentButton(
+      String title, IconData icon, int index, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _tabController.animateTo(index);
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  )
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? const Color(0xFF007AFF) : Colors.grey[600],
+            ),
+            const SizedBox(width: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? const Color(0xFF007AFF) : Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 显示用户菜单
+  void _showUserMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 用户信息
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Consumer<AuthProvider>(
+                builder: (context, authProvider, child) {
+                  return Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF007AFF).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person_rounded,
+                          color: Color(0xFF007AFF),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              authProvider.currentUser?.username ?? '用户',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              authProvider.currentUser?.email ?? '',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            const Divider(height: 1),
+            // 菜单项
+            _buildMenuTile(
+              icon: Icons.settings_rounded,
+              title: '设置',
+              onTap: () {
+                Navigator.pop(context);
+                _handleMenuSelection('settings');
+              },
+            ),
+            _buildMenuTile(
+              icon: Icons.logout_rounded,
+              title: '登出',
+              color: const Color(0xFFFF3B30),
+              onTap: () {
+                Navigator.pop(context);
+                _handleMenuSelection('logout');
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 构建菜单项
+  Widget _buildMenuTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: color ?? Colors.grey[700],
+        size: 22,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: color ?? Colors.black,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 
@@ -248,14 +495,45 @@ class _MainPageState extends State<MainPage>
 
         return Column(
           children: [
-            // 搜索框
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            // 苹果风格的搜索框
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: TextField(
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '搜索剪贴板内容...',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+                  hintStyle: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: Colors.grey[400],
+                    size: 20,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
                 ),
                 onChanged: (query) {
                   setState(() {
@@ -268,33 +546,70 @@ class _MainPageState extends State<MainPage>
             // 剪贴板列表
             Expanded(
               child: items.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.content_paste,
-                              size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.content_paste_rounded,
+                              size: 40,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
                           Text(
                             '暂无剪贴板内容',
-                            style: TextStyle(color: Colors.grey, fontSize: 16),
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             '复制一些内容试试吧！',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
                         ],
                       ),
                     )
-                  : ListView.separated(
-                      itemCount: items.length,
-                      separatorBuilder: (context, index) =>
-                          const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return _buildClipboardItem(item);
-                      },
+                  : Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.only(
+                            bottom: 80), // 添加底部padding避免被FAB遮挡
+                        itemCount: items.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.06),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: _buildClipboardItem(item),
+                          );
+                        },
+                      ),
                     ),
             ),
           ],

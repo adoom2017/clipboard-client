@@ -50,25 +50,83 @@ class ClipboardApp extends StatelessWidget {
             title: '剪贴板同步工具',
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
+                seedColor: const Color(0xFF007AFF), // iOS蓝色
                 brightness: Brightness.light,
               ),
               useMaterial3: true,
+              fontFamily: 'SF Pro Text', // 苹果字体（如果有的话）
               appBarTheme: const AppBarTheme(
                 centerTitle: true,
                 elevation: 0,
+                backgroundColor: Colors.transparent,
+                scrolledUnderElevation: 0,
+                titleTextStyle: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
               ),
+              cardTheme: CardTheme(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                color: Colors.white,
+                shadowColor: Colors.black.withOpacity(0.1),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+              scaffoldBackgroundColor: const Color(0xFFF2F2F7), // iOS背景色
             ),
             darkTheme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
+                seedColor: const Color(0xFF0A84FF), // iOS深色模式蓝色
                 brightness: Brightness.dark,
               ),
               useMaterial3: true,
+              fontFamily: 'SF Pro Text',
               appBarTheme: const AppBarTheme(
                 centerTitle: true,
                 elevation: 0,
+                backgroundColor: Colors.transparent,
+                scrolledUnderElevation: 0,
+                titleTextStyle: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
+              cardTheme: CardTheme(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                color: const Color(0xFF1C1C1E),
+                shadowColor: Colors.black.withOpacity(0.3),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+              scaffoldBackgroundColor: const Color(0xFF000000), // iOS深色背景
             ),
             themeMode: ThemeMode.system,
 
