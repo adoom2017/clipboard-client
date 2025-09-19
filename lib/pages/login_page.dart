@@ -124,7 +124,8 @@ class _LoginPageState extends State<LoginPage> {
                   pinned: false,
                   automaticallyImplyLeading: false,
                   flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+                    centerTitle: true,
+                    titlePadding: const EdgeInsets.only(bottom: 16),
                     title: Text(
                       _isLoginMode ? '登录' : '注册',
                       style: const TextStyle(
@@ -148,26 +149,30 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           // Logo
                           Center(
-                            child: Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF007AFF),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF007AFF)
-                                        .withOpacity(0.3),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF007AFF),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF007AFF)
+                                            .withOpacity(0.3),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.content_paste_rounded,
-                                size: 50,
-                                color: Colors.white,
-                              ),
+                                  child: const Icon(
+                                    Icons.content_paste_rounded,
+                                    size: 50,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 40),

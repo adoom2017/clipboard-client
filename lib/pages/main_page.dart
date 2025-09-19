@@ -6,6 +6,7 @@ import '../providers/server_sync_provider.dart';
 import '../services/clipboard_service.dart';
 import '../services/clipboard_watcher_service.dart';
 import '../widgets/clipboard_item_widget.dart';
+import '../utils/logger.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -16,6 +17,8 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage>
     with SingleTickerProviderStateMixin {
+  static final _logger = getLogger('MainPage');
+
   late TabController _tabController;
   late ClipboardWatcherService _clipboardWatcher;
 
@@ -106,7 +109,7 @@ class _MainPageState extends State<MainPage>
       // 可选：获取服务器统计信息
       await syncProvider.getServerStatistics();
 
-      debugPrint('服务器数据初始化完成，下载了 $downloadCount 个新项目');
+      _logger.info('服务器数据初始化完成，下载了 $downloadCount 个新项目');
 
       // 如果下载了新项目，显示提示
       if (downloadCount > 0 && mounted) {
@@ -119,7 +122,7 @@ class _MainPageState extends State<MainPage>
         );
       }
     } catch (e) {
-      debugPrint('初始化服务器数据失败: $e');
+      _logger.severe('初始化服务器数据失败', e);
       // 不显示错误提示，避免打扰用户体验
       // 同步状态检查会在后续操作中自动处理
     }
@@ -134,24 +137,13 @@ class _MainPageState extends State<MainPage>
           return [
             // 苹果风格的大标题导航栏
             SliverAppBar(
-              expandedHeight: 120,
+              expandedHeight: 40,
               floating: false,
               pinned: true,
               snap: false,
               elevation: 0,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               automaticallyImplyLeading: false,
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-                title: const Text(
-                  '剪贴板',
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
               actions: [
                 // 剪贴板监听状态指示器
                 Container(
@@ -225,7 +217,7 @@ class _MainPageState extends State<MainPage>
                   children: [
                     Expanded(
                       child: _buildSegmentButton(
-                        '剪贴板',
+                        '列表',
                         Icons.content_paste_rounded,
                         0,
                         _tabController.index == 0,
@@ -591,7 +583,7 @@ class _MainPageState extends State<MainPage>
                             bottom: 80), // 添加底部padding避免被FAB遮挡
                         itemCount: items.length,
                         separatorBuilder: (context, index) =>
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final item = items[index];
                           return Container(
@@ -600,9 +592,9 @@ class _MainPageState extends State<MainPage>
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.06),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 1),
                                 ),
                               ],
                             ),
@@ -620,6 +612,7 @@ class _MainPageState extends State<MainPage>
 
   Widget _buildClipboardItem(ClipboardItem item) {
     return ClipboardItemWidget(
+      key: ValueKey(item.id), // 添加唯一key避免Widget复用问题
       item: item,
       onDelete: () => _handleItemAction('delete', item),
       onSync: () {

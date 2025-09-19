@@ -44,6 +44,7 @@ ServerClipboardItem _$ServerClipboardItemFromJson(Map<String, dynamic> json) =>
       type: json['type'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
     );
 
 Map<String, dynamic> _$ServerClipboardItemToJson(
@@ -54,6 +55,7 @@ Map<String, dynamic> _$ServerClipboardItemToJson(
       'type': instance.type,
       'timestamp': instance.timestamp.toIso8601String(),
       'created_at': instance.createdAt.toIso8601String(),
+      'updated_at': instance.updatedAt.toIso8601String(),
     };
 
 ClipboardListResponse _$ClipboardListResponseFromJson(

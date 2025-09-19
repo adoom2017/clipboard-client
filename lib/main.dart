@@ -7,9 +7,13 @@ import 'providers/server_sync_provider.dart';
 import 'services/clipboard_service.dart';
 import 'pages/login_page.dart';
 import 'pages/main_page.dart';
+import 'utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化日志系统
+  AppLogger.init();
 
   // 初始化Hive
   await Hive.initFlutter();
@@ -47,7 +51,6 @@ class ClipboardApp extends StatelessWidget {
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
           return MaterialApp(
-            title: '剪贴板同步工具',
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
                 seedColor: const Color(0xFF007AFF), // iOS蓝色

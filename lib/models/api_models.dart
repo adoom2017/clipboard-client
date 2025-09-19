@@ -53,6 +53,8 @@ class ServerClipboardItem {
   final DateTime timestamp;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
+  @JsonKey(name: 'updated_at')
+  final DateTime updatedAt;
 
   const ServerClipboardItem({
     required this.id,
@@ -60,6 +62,7 @@ class ServerClipboardItem {
     required this.type,
     required this.timestamp,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   factory ServerClipboardItem.fromJson(Map<String, dynamic> json) =>

@@ -5,8 +5,11 @@ import '../models/clipboard_item.dart';
 import '../models/api_models.dart';
 import '../services/api_service.dart';
 import '../services/clipboard_service.dart';
+import '../utils/logger.dart';
 
 class ServerSyncProvider extends ChangeNotifier {
+  static final _logger = getLogger('ServerSyncProvider');
+
   final ApiService _apiService = ApiService();
   final ClipboardService _clipboardService = ClipboardService.instance;
 
@@ -213,9 +216,12 @@ class ServerSyncProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      _logger.info('开始同步项目: ${item.id}');
+
       // 检查内容长度
       const maxContentLength = 512 * 1024; // 512KB
       if (item.content.length > maxContentLength) {
+        _logger.warning('内容过长，无法同步: ${item.content.length}字符');
         _setError('内容过长，无法同步（${item.content.length}字符）');
         return false;
       }
@@ -242,11 +248,11 @@ class ServerSyncProvider extends ChangeNotifier {
       await prefs.setInt(
           'last_sync_time', _lastSyncTime!.millisecondsSinceEpoch);
 
-      debugPrint('单个项目同步成功: ${item.id} -> ${syncedItem.id}');
+      _logger.info('项目同步成功: ${item.id} -> ${syncedItem.id}');
       return true;
     } catch (e) {
+      _logger.severe('项目同步失败: ${item.id}', e);
       _setError('同步失败: ${e.toString()}');
-      debugPrint('单个项目同步失败: ${e.toString()}');
       return false;
     } finally {
       _setSyncing(false);
