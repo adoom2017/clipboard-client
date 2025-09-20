@@ -108,22 +108,15 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
                     ),
                     const SizedBox(height: 8),
                     // Content preview with better typography
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isExpanded = !_isExpanded;
-                        });
-                      },
-                      child: Text(
-                        _isExpanded ? widget.item.content : widget.item.preview,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          height: 1.3,
-                          color: Colors.black87,
-                        ),
-                        maxLines: _isExpanded ? null : 2,
-                        overflow: _isExpanded ? null : TextOverflow.ellipsis,
+                    Text(
+                      _isExpanded ? widget.item.content : widget.item.preview,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        height: 1.3,
+                        color: Colors.black87,
                       ),
+                      maxLines: _isExpanded ? null : 2,
+                      overflow: _isExpanded ? null : TextOverflow.ellipsis,
                     ),
                     // Action buttons row
                     const SizedBox(height: 12),
