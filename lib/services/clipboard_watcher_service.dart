@@ -1,9 +1,10 @@
 import 'package:clipboard_watcher/clipboard_watcher.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'clipboard_service.dart';
+import '../utils/logger.dart';
 
 class ClipboardWatcherService with ClipboardListener {
+  static final _logger = getLogger('ClipboardWatcher');
   static ClipboardWatcherService? _instance;
   static ClipboardWatcherService get instance {
     _instance ??= ClipboardWatcherService._internal();
@@ -34,29 +35,29 @@ class ClipboardWatcherService with ClipboardListener {
       await clipboardWatcher.start();
 
       _isWatching = true;
-      debugPrint('剪贴板监听已启动');
+      _logger.info('剪贴板监听已启动');
     } catch (e) {
-      debugPrint('启动剪贴板监听失败: $e');
+      _logger.severe('启动剪贴板监听失败', e);
 
       // 清理可能的残留状态
       try {
         clipboardWatcher.removeListener(this);
       } catch (cleanupError) {
-        debugPrint('清理监听器失败: $cleanupError');
+        _logger.warning('清理监听器失败: $cleanupError');
       }
 
       // 不重新抛出异常，让应用继续运行
       // 可以在UI中显示警告，但不阻塞应用启动
-      debugPrint('剪贴板监听启动失败，将在后台继续尝试');
+      _logger.warning('剪贴板监听启动失败，将在后台继续尝试');
 
       // 延迟重试启动监听
       Future.delayed(const Duration(seconds: 2), () async {
         if (!_isWatching) {
-          debugPrint('正在重试启动剪贴板监听...');
+          _logger.info('正在重试启动剪贴板监听...');
           try {
             await startWatching();
           } catch (retryError) {
-            debugPrint('重试启动剪贴板监听失败: $retryError');
+            _logger.warning('重试启动剪贴板监听失败: $retryError');
           }
         }
       });
@@ -75,9 +76,9 @@ class ClipboardWatcherService with ClipboardListener {
       await clipboardWatcher.stop();
 
       _isWatching = false;
-      debugPrint('剪贴板监听已停止');
+      _logger.info('剪贴板监听已停止');
     } catch (e) {
-      debugPrint('停止剪贴板监听失败: $e');
+      _logger.severe('停止剪贴板监听失败', e);
     }
   }
 
@@ -89,9 +90,10 @@ class ClipboardWatcherService with ClipboardListener {
 
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       _lastClipboardContent = data?.text;
-      debugPrint('初始化剪贴板内容: ${_lastClipboardContent?.substring(0, 50) ?? "空"}');
+      _logger
+          .info('初始化剪贴板内容: ${_lastClipboardContent?.substring(0, 50) ?? "空"}');
     } catch (e) {
-      debugPrint('获取初始剪贴板内容失败: $e');
+      _logger.warning('获取初始剪贴板内容失败: $e');
       // 初始化失败不影响后续监听
       _lastClipboardContent = null;
     }
@@ -113,12 +115,12 @@ class ClipboardWatcherService with ClipboardListener {
         } catch (e) {
           if (attempt == maxRetries - 1) {
             // 最后一次尝试失败，记录错误但不抛出异常
-            debugPrint('获取剪贴板内容失败(尝试${attempt + 1}次): $e');
+            _logger.warning('获取剪贴板内容失败(尝试${attempt + 1}次): $e');
             return;
           }
           // 短暂延迟后重试
           await Future.delayed(retryDelay);
-          debugPrint('剪贴板访问失败，正在重试(${attempt + 1}/$maxRetries): $e');
+          _logger.warning('剪贴板访问失败，正在重试(${attempt + 1}/$maxRetries): $e');
         }
       }
 
@@ -134,7 +136,7 @@ class ClipboardWatcherService with ClipboardListener {
         return;
       }
 
-      debugPrint(
+      _logger.info(
           '检测到剪贴板变化: ${newContent.substring(0, newContent.length > 50 ? 50 : newContent.length)}');
 
       // 保存到数据库
@@ -143,9 +145,9 @@ class ClipboardWatcherService with ClipboardListener {
       // 更新最后的剪贴板内容
       _lastClipboardContent = newContent;
 
-      debugPrint('剪贴板内容已保存');
+      _logger.info('剪贴板内容已保存');
     } catch (e) {
-      debugPrint('处理剪贴板变化失败: $e');
+      _logger.severe('处理剪贴板变化失败', e);
       // 不重新抛出异常，避免影响后续监听
     }
   }
@@ -181,7 +183,7 @@ class ClipboardWatcherService with ClipboardListener {
     if (content.isNotEmpty && !_shouldIgnoreContent(content)) {
       await _clipboardService.addClipboardItem(content);
       _lastClipboardContent = content;
-      debugPrint('手动添加剪贴板内容: $content');
+      _logger.info('手动添加剪贴板内容: $content');
     }
   }
 

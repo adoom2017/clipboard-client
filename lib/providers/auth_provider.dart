@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../models/api_models.dart';
 import '../services/api_service.dart';
+import '../utils/logger.dart';
 
 class AuthProvider extends ChangeNotifier {
+  static final _logger = getLogger('AuthProvider');
   final ApiService _apiService = ApiService();
 
   User? _currentUser;
@@ -31,7 +33,7 @@ class AuthProvider extends ChangeNotifier {
         _setAuthenticated(true);
       }
     } catch (e) {
-      debugPrint('检查认证状态失败: $e');
+      _logger.warning('检查认证状态失败: $e');
       _setAuthenticated(false);
     } finally {
       _setLoading(false);
@@ -82,7 +84,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _apiService.logout();
     } catch (e) {
-      debugPrint('登出失败: $e');
+      _logger.warning('登出失败: $e');
     } finally {
       _setUser(null);
       _setAuthenticated(false);
@@ -99,7 +101,7 @@ class AuthProvider extends ChangeNotifier {
       final user = await _apiService.getUserProfile();
       _setUser(user);
     } catch (e) {
-      debugPrint('刷新用户资料失败: $e');
+      _logger.warning('刷新用户资料失败: $e');
       if (e.toString().contains('认证失败')) {
         await logout();
       }
@@ -112,7 +114,7 @@ class AuthProvider extends ChangeNotifier {
       await _apiService.refreshToken();
       return true;
     } catch (e) {
-      debugPrint('刷新Token失败: $e');
+      _logger.warning('刷新Token失败: $e');
       await logout();
       return false;
     }

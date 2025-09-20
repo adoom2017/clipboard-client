@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import '../models/clipboard_item.dart';
+import '../utils/logger.dart';
 
 class ClipboardService extends ChangeNotifier {
+  static final _logger = getLogger('ClipboardService');
   static const String _boxName = 'clipboard_items';
   static ClipboardService? _instance;
 
@@ -21,7 +23,7 @@ class ClipboardService extends ChangeNotifier {
     // 检查内容长度，超过512KB的内容不保存
     const maxContentLength = 512 * 1024; // 512KB
     if (content.length > maxContentLength) {
-      debugPrint('剪贴板内容过长(${content.length}字符)，跳过保存');
+      _logger.warning('剪贴板内容过长(${content.length}字符)，跳过保存');
       return;
     }
 
@@ -85,7 +87,7 @@ class ClipboardService extends ChangeNotifier {
     }
 
     if (itemsToDelete.isNotEmpty) {
-      debugPrint('清理了 ${itemsToDelete.length} 个过长的剪贴板项目');
+      _logger.info('清理了 ${itemsToDelete.length} 个过长的剪贴板项目');
       notifyListeners();
     }
   }

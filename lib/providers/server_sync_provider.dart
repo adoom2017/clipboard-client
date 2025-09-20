@@ -59,7 +59,7 @@ class ServerSyncProvider extends ChangeNotifier {
   // 刷新服务器数据缓存
   Future<void> refreshServerItemsCache() async {
     try {
-      debugPrint('开始刷新服务器数据缓存');
+      _logger.info('开始刷新服务器数据缓存');
 
       // 获取服务器端的剪贴板项目
       final response = await _apiService.getClipboardItems(
@@ -76,11 +76,11 @@ class ServerSyncProvider extends ChangeNotifier {
       }
 
       _lastCacheUpdateTime = DateTime.now();
-      debugPrint('服务器数据缓存刷新完成，共 ${_serverItemsCache.length} 项');
+      _logger.info('服务器数据缓存刷新完成，共 ${_serverItemsCache.length} 项');
 
       notifyListeners();
     } catch (e) {
-      debugPrint('刷新服务器缓存失败: $e');
+      _logger.severe('刷新服务器缓存失败', e);
     }
   }
 
@@ -100,7 +100,7 @@ class ServerSyncProvider extends ChangeNotifier {
     int downloadCount = 0;
 
     try {
-      debugPrint('开始下载服务器剪贴板项目到本地');
+      _logger.info('开始下载服务器剪贴板项目到本地');
 
       // 获取服务器端的剪贴板项目
       final response = await _apiService.getClipboardItems(
@@ -141,10 +141,10 @@ class ServerSyncProvider extends ChangeNotifier {
       }
       _lastCacheUpdateTime = DateTime.now();
 
-      debugPrint('服务器项目下载完成，新增 $downloadCount 项');
+      _logger.info('服务器项目下载完成，新增 $downloadCount 项');
       return downloadCount;
     } catch (e) {
-      debugPrint('下载服务器项目失败: $e');
+      _logger.severe('下载服务器项目失败', e);
       _errorMessage = '下载服务器项目失败: $e';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
@@ -276,7 +276,7 @@ class ServerSyncProvider extends ChangeNotifier {
       await prefs.setInt(
           'last_sync_time', _lastSyncTime!.millisecondsSinceEpoch);
 
-      debugPrint('统计信息同步完成');
+      _logger.info('统计信息同步完成');
       return true;
     } catch (e) {
       _setError('同步失败: ${e.toString()}');
@@ -328,18 +328,18 @@ class ServerSyncProvider extends ChangeNotifier {
     try {
       // 首先删除本地项目
       await _clipboardService.deleteItem(localItem);
-      debugPrint('本地项目删除成功: ${localItem.id}');
+      _logger.info('本地项目删除成功: ${localItem.id}');
 
       // 如果有服务器 ID，也删除服务器上的项目
       if (localItem.serverId != null && localItem.serverId!.isNotEmpty) {
         final serverDeleted = await deleteServerItem(localItem.serverId!);
         if (serverDeleted) {
-          debugPrint('服务器项目删除成功: ${localItem.serverId}');
+          _logger.info('服务器项目删除成功: ${localItem.serverId}');
           // 从缓存中移除
           _serverItemsCache
               .removeWhere((key, value) => value.id == localItem.serverId);
         } else {
-          debugPrint('服务器项目删除失败: ${localItem.serverId}');
+          _logger.warning('服务器项目删除失败: ${localItem.serverId}');
           // 即使服务器删除失败，本地已删除，可以继续
         }
       }
@@ -349,7 +349,7 @@ class ServerSyncProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      debugPrint('删除项目失败: $e');
+      _logger.severe('删除项目失败', e);
       _errorMessage = '删除项目失败: $e';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();

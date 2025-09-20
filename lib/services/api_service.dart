@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/api_models.dart';
+import '../utils/logger.dart';
 
 class ApiService {
+  static final _logger = getLogger('ApiService');
   static const String baseUrl = 'http://localhost/api/v1';
   late final Dio _dio;
   String? _token;
@@ -27,19 +28,20 @@ class ApiService {
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
         }
-        debugPrint('API请求: ${options.method} ${options.uri}');
-        debugPrint('请求头: ${options.headers}');
+        _logger.info('API请求: ${options.method} ${options.uri}');
+        _logger.info('请求头: ${options.headers}');
         if (options.data != null) {
-          debugPrint('请求体: ${options.data}');
+          _logger.info('请求体: ${options.data}');
         }
         handler.next(options);
       },
       onResponse: (response, handler) {
-        debugPrint('响应: ${response.statusCode} ${response.requestOptions.uri}');
+        _logger
+            .info('响应: ${response.statusCode} ${response.requestOptions.uri}');
         handler.next(response);
       },
       onError: (error, handler) {
-        debugPrint('错误: ${error.message}');
+        _logger.severe('错误: ${error.message}');
         if (error.response?.statusCode == 401) {
           // Token过期或无效，清除本地存储的token
           _clearToken();
@@ -147,7 +149,7 @@ class ApiService {
     try {
       await _dio.post('/user/logout');
     } catch (e) {
-      debugPrint('登出请求失败: $e');
+      _logger.warning('登出请求失败: $e');
     } finally {
       await _clearToken();
     }
