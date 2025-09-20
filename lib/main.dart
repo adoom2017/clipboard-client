@@ -5,6 +5,7 @@ import 'models/clipboard_item.dart';
 import 'providers/auth_provider.dart';
 import 'providers/server_sync_provider.dart';
 import 'services/clipboard_service.dart';
+import 'services/api_service.dart';
 import 'pages/login_page.dart';
 import 'pages/main_page.dart';
 import 'utils/logger.dart';
@@ -14,6 +15,9 @@ void main() async {
 
   // 初始化日志系统
   AppLogger.init();
+
+  // 初始化ApiService（加载保存的baseUrl）
+  await ApiService().initializeApi();
 
   // 初始化Hive
   await Hive.initFlutter();

@@ -7,6 +7,7 @@ import '../services/clipboard_service.dart';
 import '../services/clipboard_watcher_service.dart';
 import '../widgets/clipboard_item_widget.dart';
 import '../utils/logger.dart';
+import 'settings_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -1106,6 +1107,11 @@ class _MainPageState extends State<MainPage>
         break;
       case 'settings':
         // 打开设置页面
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const SettingsPage(),
+          ),
+        );
         break;
       case 'logout':
         final authProvider = Provider.of<AuthProvider>(context, listen: false);

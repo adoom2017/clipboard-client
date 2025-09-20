@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
+import '../utils/logger.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -123,6 +125,21 @@ class _LoginPageState extends State<LoginPage> {
                   expandedHeight: 120,
                   pinned: false,
                   automaticallyImplyLeading: false,
+                  actions: [
+                    // 服务器设置按钮
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16, top: 16),
+                      child: IconButton(
+                        onPressed: _showServerSettings,
+                        icon: const Icon(
+                          Icons.settings_rounded,
+                          color: Color(0xFF007AFF),
+                          size: 24,
+                        ),
+                        tooltip: '服务器设置',
+                      ),
+                    ),
+                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     centerTitle: true,
                     titlePadding: const EdgeInsets.only(bottom: 16),
@@ -373,6 +390,20 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  // 显示服务器设置对话框
+  void _showServerSettings() {
+    final _logger = getLogger('LoginPage');
+    final apiService = ApiService();
+
+    showDialog(
+      context: context,
+      builder: (context) => _ServerSettingsDialog(
+        apiService: apiService,
+        logger: _logger,
+      ),
+    );
+  }
+
   void _handleSubmit() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -462,6 +493,371 @@ class _ServerStatusIndicatorState extends State<_ServerStatusIndicator> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// 服务器设置对话框
+class _ServerSettingsDialog extends StatefulWidget {
+  final ApiService apiService;
+  final dynamic logger;
+
+  const _ServerSettingsDialog({
+    required this.apiService,
+    required this.logger,
+  });
+
+  @override
+  State<_ServerSettingsDialog> createState() => _ServerSettingsDialogState();
+}
+
+class _ServerSettingsDialogState extends State<_ServerSettingsDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _baseUrlController;
+
+  bool _isLoading = false;
+  bool _isConnecting = false;
+  String? _connectionStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _baseUrlController = TextEditingController(
+      text: widget.apiService.currentBaseUrl.replaceAll('/api/v1', ''),
+    );
+  }
+
+  @override
+  void dispose() {
+    _baseUrlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _testConnection() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isConnecting = true;
+      _connectionStatus = null;
+    });
+
+    try {
+      String testUrl = _baseUrlController.text.trim();
+      if (!testUrl.endsWith('/api/v1')) {
+        testUrl = '$testUrl/api/v1';
+      }
+
+      final success = await widget.apiService.testConnection(testUrl: testUrl);
+
+      setState(() {
+        _connectionStatus = success ? '连接成功！' : '连接失败，请检查URL是否正确';
+      });
+    } catch (e) {
+      setState(() {
+        _connectionStatus = '连接失败: ${e.toString()}';
+      });
+    } finally {
+      setState(() {
+        _isConnecting = false;
+      });
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await widget.apiService.updateBaseUrl(_baseUrlController.text.trim());
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('服务器设置已保存'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      widget.logger.severe('保存设置失败', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('保存失败: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _resetToDefault() async {
+    await widget.apiService.resetBaseUrl();
+    _baseUrlController.text =
+        widget.apiService.currentBaseUrl.replaceAll('/api/v1', '');
+    setState(() {
+      _connectionStatus = null;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('已重置为默认设置'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    }
+  }
+
+  String? _validateUrl(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return '请输入服务器地址';
+    }
+
+    final trimmed = value.trim();
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || !uri.hasScheme) {
+      return '请输入有效的URL地址 (如: http://192.168.1.100:8080)';
+    }
+
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: double.maxFinite,
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 标题栏
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF007AFF).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.dns_rounded,
+                      color: Color(0xFF007AFF),
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      '服务器设置',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.grey),
+                    splashRadius: 20,
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1),
+
+            // 内容区域
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '服务器地址',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _baseUrlController,
+                      validator: _validateUrl,
+                      decoration: InputDecoration(
+                        hintText: '例如: http://192.168.1.100:8080',
+                        hintStyle: const TextStyle(color: Colors.grey),
+                        filled: true,
+                        fillColor: const Color(0xFFF2F2F7),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF007AFF),
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 连接测试按钮
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isConnecting ? null : _testConnection,
+                        icon: _isConnecting
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.wifi_find, size: 18),
+                        label: Text(_isConnecting ? '测试中...' : '测试连接'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF007AFF),
+                          side: const BorderSide(color: Color(0xFF007AFF)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+
+                    // 连接状态显示
+                    if (_connectionStatus != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _connectionStatus!.contains('成功')
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _connectionStatus!.contains('成功')
+                                  ? Icons.check_circle
+                                  : Icons.error,
+                              color: _connectionStatus!.contains('成功')
+                                  ? Colors.green
+                                  : Colors.red,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _connectionStatus!,
+                                style: TextStyle(
+                                  color: _connectionStatus!.contains('成功')
+                                      ? Colors.green.shade700
+                                      : Colors.red.shade700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 20),
+
+                    // 按钮行
+                    Row(
+                      children: [
+                        // 重置按钮
+                        Expanded(
+                          child: TextButton.icon(
+                            onPressed: _resetToDefault,
+                            icon: const Icon(Icons.restore, size: 16),
+                            label: const Text('重置'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey.shade600,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // 保存按钮
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _saveSettings,
+                            icon: _isLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.save, size: 16),
+                            label: Text(_isLoading ? '保存中...' : '保存'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF007AFF),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

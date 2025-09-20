@@ -5,16 +5,26 @@ import '../utils/logger.dart';
 
 class ApiService {
   static final _logger = getLogger('ApiService');
-  static const String baseUrl = 'http://localhost/api/v1';
-  late final Dio _dio;
+  static const String _defaultBaseUrl = 'http://localhost/api/v1';
+  static const String _baseUrlKey = 'api_base_url';
+  late Dio _dio;
   String? _token;
+  String _currentBaseUrl = _defaultBaseUrl;
 
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
 
   ApiService._internal() {
+    // 在构造函数中不调用异步方法，改为延迟初始化
+  }
+
+  // 公共初始化方法
+  Future<void> initializeApi() async {
+    // 从SharedPreferences加载保存的baseUrl
+    await _loadBaseUrl();
+
     _dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
+      baseUrl: _currentBaseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
@@ -51,7 +61,7 @@ class ApiService {
     ));
 
     // 初始化时加载保存的token
-    _loadToken();
+    await _loadToken();
   }
 
   Future<void> _loadToken() async {
@@ -69,6 +79,84 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
     _token = null;
+  }
+
+  // BaseUrl 相关方法
+  Future<void> _loadBaseUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    _currentBaseUrl = prefs.getString(_baseUrlKey) ?? _defaultBaseUrl;
+    _logger.info('加载保存的BaseUrl: $_currentBaseUrl');
+  }
+
+  Future<void> _saveBaseUrl(String baseUrl) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_baseUrlKey, baseUrl);
+    _logger.info('保存BaseUrl: $baseUrl');
+  }
+
+  // 获取当前的BaseUrl
+  String get currentBaseUrl => _currentBaseUrl;
+
+  // 获取默认的BaseUrl
+  String get defaultBaseUrl => _defaultBaseUrl;
+
+  // 更新BaseUrl并重新配置Dio实例
+  Future<void> updateBaseUrl(String newBaseUrl) async {
+    // 验证URL格式
+    if (!_isValidUrl(newBaseUrl)) {
+      throw Exception('无效的URL格式');
+    }
+
+    // 确保URL以/api/v1结尾
+    String formattedUrl = newBaseUrl.trim();
+    if (formattedUrl.endsWith('/')) {
+      formattedUrl = formattedUrl.substring(0, formattedUrl.length - 1);
+    }
+    if (!formattedUrl.endsWith('/api/v1')) {
+      formattedUrl = '$formattedUrl/api/v1';
+    }
+
+    _currentBaseUrl = formattedUrl;
+    await _saveBaseUrl(_currentBaseUrl);
+
+    // 重新配置Dio实例
+    _dio.options.baseUrl = _currentBaseUrl;
+    _logger.info('BaseUrl已更新为: $_currentBaseUrl');
+  }
+
+  // 重置BaseUrl为默认值
+  Future<void> resetBaseUrl() async {
+    await updateBaseUrl(_defaultBaseUrl);
+  }
+
+  // 验证URL格式
+  bool _isValidUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // 测试连接到指定的BaseUrl
+  Future<bool> testConnection({String? testUrl}) async {
+    try {
+      final urlToTest = testUrl ?? _currentBaseUrl;
+      final tempDio = Dio(BaseOptions(
+        baseUrl: urlToTest,
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
+      ));
+
+      // 尝试访问健康检查端点
+      await tempDio.get('/system/health');
+      _logger.info('连接测试成功: $urlToTest');
+      return true;
+    } catch (e) {
+      _logger.warning('连接测试失败: ${testUrl ?? _currentBaseUrl}, 错误: $e');
+      return false;
+    }
   }
 
   bool get isAuthenticated => _token != null;
