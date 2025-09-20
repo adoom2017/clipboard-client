@@ -155,25 +155,20 @@ class ClipboardWatcherService with ClipboardListener {
   /// 判断是否应该忽略此内容
   bool _shouldIgnoreContent(String content) {
     // 忽略过短的内容
-    if (content.length < 2) {
+    if (content.length < 4) {
       return true;
     }
 
     // 忽略纯数字（可能是验证码等敏感信息）
-    if (RegExp(r'^\d{4,6}$').hasMatch(content)) {
-      return true;
-    }
+    //if (RegExp(r'^\d{4,6}$').hasMatch(content)) {
+    //  return true;
+    //}
 
     // 忽略可能的密码（包含特殊字符的短字符串）
-    if (content.length < 20 &&
-        RegExp(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>?]').hasMatch(content)) {
-      return true;
-    }
-
-    // 忽略单个字符或符号
-    if (content.length == 1) {
-      return true;
-    }
+    //if (content.length < 20 &&
+    //    RegExp(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>?]').hasMatch(content)) {
+    //  return true;
+    //}
 
     return false;
   }
