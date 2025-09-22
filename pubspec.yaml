@@ -1,5 +1,5 @@
-name: clipboard_auto
-description: "A new Flutter project."
+name: clipboard_sync
+description: "跨设备剪贴板同步工具 - 让您的剪贴板内容在多设备间无缝同步"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

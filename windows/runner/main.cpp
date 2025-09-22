@@ -27,7 +27,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(600, 800);  // iPhone 8 size: mobile-like dimensions
-  if (!window.Create(L"clipboard_auto", origin, size)) {
+  if (!window.Create(L"Clipboard Sync", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

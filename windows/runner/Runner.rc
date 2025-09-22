@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "clipboard_auto" "\0"
+            VALUE "CompanyName", "clipboard_sync" "\0"
+            VALUE "FileDescription", "剪贴板同步工具" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "clipboard_auto" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "clipboard_auto.exe" "\0"
-            VALUE "ProductName", "clipboard_auto" "\0"
+            VALUE "InternalName", "clipboard_sync" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 clipboard_sync. All rights reserved." "\0"
+            VALUE "OriginalFilename", "clipboard_sync.exe" "\0"
+            VALUE "ProductName", "剪贴板同步" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
