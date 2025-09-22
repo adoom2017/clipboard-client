@@ -1,0 +1,34 @@
+<!-- 这是一个 SVG 格式的示例图标，您可以转换为 PNG 使用 -->
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景渐变 -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#007AFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5AC8FA;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="clipboardGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.95" />
+      <stop offset="100%" style="stop-color:#F2F2F7;stop-opacity:0.95" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 圆角背景 -->
+  <rect x="0" y="0" width="1024" height="1024" rx="220" ry="220" fill="url(#bgGradient)"/>
+  
+  <!-- 剪贴板主体 -->
+  <rect x="262" y="182" width="500" height="660" rx="40" ry="40" fill="url(#clipboardGradient)" stroke="#007AFF" stroke-width="8"/>
+  
+  <!-- 剪贴板夹子 -->
+  <rect x="362" y="122" width="300" height="120" rx="20" ry="20" fill="#007AFF"/>
+  <rect x="382" y="142" width="260" height="80" rx="15" ry="15" fill="#FFFFFF"/>
+  
+  <!-- 文档线条 -->
+  <rect x="342" y="322" width="340" height="24" rx="12" ry="12" fill="#007AFF" opacity="0.7"/>
+  <rect x="342" y="382" width="340" height="24" rx="12" ry="12" fill="#007AFF" opacity="0.5"/>
+  <rect x="342" y="442" width="260" height="24" rx="12" ry="12" fill="#007AFF" opacity="0.5"/>
+  
+  <!-- 同步图标 -->
+  <circle cx="832" cy="192" r="96" fill="#34C759"/>
+  <path d="M 792 152 L 832 112 L 872 152 M 832 112 L 832 192 M 872 232 L 832 272 L 792 232 M 832 272 L 832 192" 
+        stroke="#FFFFFF" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
