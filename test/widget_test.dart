@@ -7,7 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:clipboard_auto/main.dart';
+import 'package:clipboard_sync/main.dart';
 
 void main() {
   testWidgets('Clipboard app basic test', (WidgetTester tester) async {
