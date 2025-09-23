@@ -218,25 +218,57 @@ class _MainPageState extends State<MainPage>
                         ),
                       );
                     }
-                    return Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      child: _buildStatusButton(
-                        icon: syncProvider.isAutoSyncEnabled
-                            ? Icons.sync_rounded // 自动同步开启时显示不同图标
-                            : Icons.cloud_sync_rounded,
-                        color: syncProvider.isAutoSyncEnabled
-                            ? const Color(0xFF34C759) // 自动同步开启时显示绿色
-                            : (syncProvider.lastSyncTime != null
-                                ? const Color(0xFF007AFF)
-                                : Colors.grey),
-                        onTap: syncProvider.isAutoSyncEnabled
-                            ? () {} // 自动同步开启时点击不执行操作
-                            : () => syncProvider.syncWithServer(),
-                        tooltip: syncProvider.isAutoSyncEnabled
-                            ? '自动同步已开启${syncProvider.lastSyncTime != null ? '\n最后同步: ${_formatTime(syncProvider.lastSyncTime!)}' : ''}'
-                            : (syncProvider.lastSyncTime != null
-                                ? '最后同步: ${_formatTime(syncProvider.lastSyncTime!)}'
-                                : '点击同步'),
+                    return GestureDetector(
+                      onLongPress: () {
+                        // 长按显示切换自动同步的菜单
+                        _showAutoSyncMenu(context, syncProvider);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        child: Stack(
+                          children: [
+                            _buildStatusButton(
+                              icon: syncProvider.isAutoSyncEnabled
+                                  ? Icons.sync_rounded // 自动同步开启时显示同步循环图标
+                                  : Icons.cloud_sync_rounded, // 手动同步时显示云同步图标
+                              color: syncProvider.isAutoSyncEnabled
+                                  ? const Color(0xFF34C759) // 自动同步开启时显示绿色
+                                  : (syncProvider.lastSyncTime != null
+                                      ? const Color(0xFF007AFF) // 已同步蓝色
+                                      : Colors.grey), // 未同步灰色
+                              onTap: syncProvider.isAutoSyncEnabled
+                                  ? () {
+                                      // 自动同步开启时，点击显示切换菜单
+                                      _showAutoSyncMenu(context, syncProvider);
+                                    }
+                                  : () => syncProvider
+                                      .syncWithServer(), // 手动同步时触发同步
+                              tooltip: syncProvider.isAutoSyncEnabled
+                                  ? '自动同步已开启${syncProvider.lastSyncTime != null ? '\n最后同步: ${_formatTime(syncProvider.lastSyncTime!)}' : ''}'
+                                  : (syncProvider.lastSyncTime != null
+                                      ? '最后同步: ${_formatTime(syncProvider.lastSyncTime!)}'
+                                      : '点击同步'),
+                            ),
+                            // 自动同步开启时显示小标记
+                            if (syncProvider.isAutoSyncEnabled)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF34C759),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -1170,6 +1202,107 @@ class _MainPageState extends State<MainPage>
         }
         break;
     }
+  }
+
+  // 显示自动同步切换菜单
+  void _showAutoSyncMenu(
+      BuildContext context, ServerSyncProvider syncProvider) {
+    final isAutoEnabled = syncProvider.isAutoSyncEnabled;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 标题
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F7),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: const Text(
+                '自动同步设置',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+            // 菜单项 - 开启自动同步
+            ListTile(
+              leading: Icon(
+                isAutoEnabled ? Icons.check_circle : Icons.circle_outlined,
+                color: isAutoEnabled ? const Color(0xFF34C759) : Colors.grey,
+              ),
+              title: const Text('自动同步开启'),
+              subtitle: const Text('剪贴板内容变化时自动同步到云端'),
+              onTap: () {
+                Navigator.pop(context);
+                if (!isAutoEnabled) {
+                  syncProvider.setAutoSync(true);
+                  // 显示提示
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('自动同步已开启'),
+                      backgroundColor: Color(0xFF34C759),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
+
+            // 菜单项 - 关闭自动同步
+            ListTile(
+              leading: Icon(
+                !isAutoEnabled ? Icons.check_circle : Icons.circle_outlined,
+                color: !isAutoEnabled ? const Color(0xFF007AFF) : Colors.grey,
+              ),
+              title: const Text('手动同步模式'),
+              subtitle: const Text('需要手动点击同步按钮才会同步到云端'),
+              onTap: () {
+                Navigator.pop(context);
+                if (isAutoEnabled) {
+                  syncProvider.setAutoSync(false);
+                  // 显示提示
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('已切换为手动同步模式'),
+                      backgroundColor: Color(0xFF007AFF),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
+
+            // 取消按钮
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // 获取问候语
