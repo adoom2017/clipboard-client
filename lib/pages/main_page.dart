@@ -138,13 +138,54 @@ class _MainPageState extends State<MainPage>
           return [
             // 苹果风格的大标题导航栏
             SliverAppBar(
-              expandedHeight: 40,
+              expandedHeight: 50, // 增加高度以容纳更多内容
               floating: false,
               pinned: true,
               snap: false,
               elevation: 0,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               automaticallyImplyLeading: false,
+              centerTitle: false, // 确保标题不居中
+              titleSpacing: 20, // 增加左边距
+              // 添加标题区域
+              title: SizedBox(
+                width: double.infinity,
+                child: Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${_getGreeting()}, ${authProvider.currentUser?.username ?? '用户'}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Consumer<ServerSyncProvider>(
+                          builder: (context, syncProvider, child) {
+                            final localCount =
+                                ClipboardService.instance.getAllItems().length;
+                            final serverStats =
+                                syncProvider.cachedServerStatistics;
+                            return Text(
+                              '本地 $localCount 条记录${serverStats != null ? ' · 服务器 ${serverStats.totalItems} 条' : ''}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w400,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
               actions: [
                 // 剪贴板监听状态指示器
                 Container(
@@ -1120,6 +1161,18 @@ class _MainPageState extends State<MainPage>
           Navigator.of(context).pushReplacementNamed('/login');
         }
         break;
+    }
+  }
+
+  // 获取问候语
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return '早上好';
+    } else if (hour < 18) {
+      return '下午好';
+    } else {
+      return '晚上好';
     }
   }
 }

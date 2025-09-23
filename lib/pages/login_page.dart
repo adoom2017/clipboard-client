@@ -392,14 +392,14 @@ class _LoginPageState extends State<LoginPage> {
 
   // 显示服务器设置对话框
   void _showServerSettings() {
-    final _logger = getLogger('LoginPage');
+    final logger = getLogger('LoginPage');
     final apiService = ApiService();
 
     showDialog(
       context: context,
       builder: (context) => _ServerSettingsDialog(
         apiService: apiService,
-        logger: _logger,
+        logger: logger,
       ),
     );
   }
