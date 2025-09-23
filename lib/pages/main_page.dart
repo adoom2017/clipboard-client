@@ -221,14 +221,22 @@ class _MainPageState extends State<MainPage>
                     return Container(
                       margin: const EdgeInsets.only(right: 8),
                       child: _buildStatusButton(
-                        icon: Icons.cloud_sync_rounded,
-                        color: syncProvider.lastSyncTime != null
-                            ? const Color(0xFF007AFF)
-                            : Colors.grey,
-                        onTap: () => syncProvider.syncWithServer(),
-                        tooltip: syncProvider.lastSyncTime != null
-                            ? '最后同步: ${_formatTime(syncProvider.lastSyncTime!)}'
-                            : '点击同步',
+                        icon: syncProvider.isAutoSyncEnabled
+                            ? Icons.sync_rounded // 自动同步开启时显示不同图标
+                            : Icons.cloud_sync_rounded,
+                        color: syncProvider.isAutoSyncEnabled
+                            ? const Color(0xFF34C759) // 自动同步开启时显示绿色
+                            : (syncProvider.lastSyncTime != null
+                                ? const Color(0xFF007AFF)
+                                : Colors.grey),
+                        onTap: syncProvider.isAutoSyncEnabled
+                            ? () {} // 自动同步开启时点击不执行操作
+                            : () => syncProvider.syncWithServer(),
+                        tooltip: syncProvider.isAutoSyncEnabled
+                            ? '自动同步已开启${syncProvider.lastSyncTime != null ? '\n最后同步: ${_formatTime(syncProvider.lastSyncTime!)}' : ''}'
+                            : (syncProvider.lastSyncTime != null
+                                ? '最后同步: ${_formatTime(syncProvider.lastSyncTime!)}'
+                                : '点击同步'),
                       ),
                     );
                   },

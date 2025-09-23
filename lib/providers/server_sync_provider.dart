@@ -28,6 +28,9 @@ class ServerSyncProvider extends ChangeNotifier {
   // 设备ID - 用于标识当前设备
   String _deviceId = 'flutter-client-${DateTime.now().millisecondsSinceEpoch}';
 
+  // 自动同步配置
+  bool _isAutoSyncEnabled = false;
+
   // Getters
   bool get isSyncing => _isSyncing;
   DateTime? get lastSyncTime => _lastSyncTime;
@@ -35,9 +38,15 @@ class ServerSyncProvider extends ChangeNotifier {
   String get deviceId => _deviceId;
   ClipboardStatistics? get cachedServerStatistics => _cachedServerStatistics;
   bool get isLoadingStatistics => _isLoadingStatistics;
+  bool get isAutoSyncEnabled => _isAutoSyncEnabled;
 
   ServerSyncProvider() {
-    _loadSettings();
+    _loadSettings().then((_) {
+      // 如果自动同步已开启，初始化剪贴板监听器
+      if (_isAutoSyncEnabled) {
+        _setupClipboardListener();
+      }
+    });
   }
 
   // 加载设置
@@ -50,8 +59,35 @@ class ServerSyncProvider extends ChangeNotifier {
       _lastSyncTime = DateTime.fromMillisecondsSinceEpoch(lastSyncTimestamp);
     }
 
+    // 加载自动同步设置
+    _isAutoSyncEnabled = prefs.getBool('auto_sync_enabled') ?? false;
+
     // 保存设备ID
     await prefs.setString('device_id', _deviceId);
+
+    notifyListeners();
+  }
+
+  // 设置自动同步状态
+  Future<void> setAutoSync(bool enabled) async {
+    if (_isAutoSyncEnabled == enabled) return;
+
+    _isAutoSyncEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auto_sync_enabled', enabled);
+
+    _logger.info('自动同步已${enabled ? "开启" : "关闭"}');
+
+    if (enabled) {
+      // 如果开启了自动同步，立即进行一次同步
+      await syncWithServer();
+
+      // 在这里开启监听剪贴板变化
+      _setupClipboardListener();
+    } else {
+      // 如果关闭自动同步，移除监听器
+      _removeClipboardListener();
+    }
 
     notifyListeners();
   }
@@ -413,5 +449,49 @@ class ServerSyncProvider extends ChangeNotifier {
   // 清除错误信息
   void clearError() {
     _clearError();
+  }
+
+  // 设置剪贴板监听器
+  void _setupClipboardListener() {
+    // 监听ClipboardService的变化
+    _clipboardService.addListener(_onClipboardChanged);
+    _logger.info('剪贴板监听已启用');
+  }
+
+  // 移除剪贴板监听器
+  void _removeClipboardListener() {
+    _clipboardService.removeListener(_onClipboardChanged);
+    _logger.info('剪贴板监听已禁用');
+  }
+
+  // 剪贴板变化处理
+  void _onClipboardChanged() async {
+    if (!_isAutoSyncEnabled || _isSyncing) {
+      return; // 如果自动同步未开启或正在同步中，则不处理
+    }
+
+    _logger.info('检测到剪贴板变化，准备自动同步');
+
+    // 获取未同步项目
+    final unsyncedItems = await getUnsyncedItems();
+
+    if (unsyncedItems.isEmpty) {
+      _logger.info('没有需要同步的项目');
+      return;
+    }
+
+    _logger.info('开始自动同步，共 ${unsyncedItems.length} 项待同步');
+
+    // 同步每个未同步的项目
+    for (final item in unsyncedItems) {
+      await syncSingleClipboardItem(item);
+    }
+
+    // 更新最后同步时间
+    _lastSyncTime = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_sync_time', _lastSyncTime!.millisecondsSinceEpoch);
+
+    _logger.info('自动同步完成');
   }
 }

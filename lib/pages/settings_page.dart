@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/server_sync_provider.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
 import 'change_password_page.dart';
@@ -133,6 +135,30 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     return null;
+  }
+
+  // 格式化日期时间
+  String _formatDateTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 60) {
+      return '刚刚';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}分钟前';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}小时前';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}天前';
+    } else {
+      // 格式化为年月日 时:分
+      final day = dateTime.day.toString().padLeft(2, '0');
+      final month = dateTime.month.toString().padLeft(2, '0');
+      final year = dateTime.year.toString();
+      final hour = dateTime.hour.toString().padLeft(2, '0');
+      final minute = dateTime.minute.toString().padLeft(2, '0');
+      return '$year-$month-$day $hour:$minute';
+    }
   }
 
   @override
@@ -416,6 +442,89 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ),
                     ],
+
+                    const SizedBox(height: 16),
+
+                    // 自动同步开关
+                    Consumer<ServerSyncProvider>(
+                      builder: (context, syncProvider, child) {
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF2F2F7),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.sync,
+                                        color: Color(0xFF007AFF),
+                                        size: 18,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        '自动同步',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Switch.adaptive(
+                                    value: syncProvider.isAutoSyncEnabled,
+                                    onChanged: (value) async {
+                                      await syncProvider.setAutoSync(value);
+                                      if (value) {
+                                        // 显示提示消息
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                  '自动同步已开启，剪贴板内容将自动上传到服务器'),
+                                              backgroundColor: Colors.green,
+                                              duration: Duration(seconds: 2),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    activeColor: const Color(0xFF007AFF),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '开启后，剪贴板内容将自动与服务器同步，无需手动点击同步按钮',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              if (syncProvider.lastSyncTime != null) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  '最后同步时间: ${_formatDateTime(syncProvider.lastSyncTime!)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
 
                     const SizedBox(height: 16),
 
