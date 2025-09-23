@@ -8,6 +8,7 @@ import 'services/clipboard_service.dart';
 import 'services/api_service.dart';
 import 'pages/login_page.dart';
 import 'pages/main_page.dart';
+import 'pages/change_password_page.dart';
 import 'utils/logger.dart';
 
 void main() async {
@@ -148,6 +149,7 @@ class ClipboardApp extends StatelessWidget {
             routes: {
               '/login': (context) => const LoginPage(),
               '/main': (context) => const MainPage(),
+              '/change-password': (context) => const ChangePasswordPage(),
             },
           );
         },

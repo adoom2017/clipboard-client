@@ -253,6 +253,25 @@ class ApiService {
     }
   }
 
+  // 修改密码
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final data = <String, String>{
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      };
+
+      await _dio.put('/user/password', data: data);
+      _logger.info('密码修改成功');
+    } catch (e) {
+      _logger.severe('修改密码失败: $e');
+      throw _handleError(e);
+    }
+  }
+
   // 剪贴板管理接口
   Future<ClipboardListResponse> getClipboardItems({
     int page = 1,

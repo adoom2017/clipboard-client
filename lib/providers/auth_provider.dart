@@ -93,6 +93,26 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // 修改密码
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _apiService.changePassword(
+          currentPassword: currentPassword, newPassword: newPassword);
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // 刷新用户资料
   Future<void> refreshUserProfile() async {
     if (!_isAuthenticated) return;
