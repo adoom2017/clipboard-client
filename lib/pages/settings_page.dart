@@ -482,19 +482,23 @@ class _SettingsPageState extends State<SettingsPage> {
                                     value: syncProvider.isAutoSyncEnabled,
                                     onChanged: (value) async {
                                       await syncProvider.setAutoSync(value);
-                                      if (value) {
-                                        // 显示提示消息
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                  '自动同步已开启，剪贴板内容将自动上传到服务器'),
-                                              backgroundColor: Colors.green,
-                                              duration: Duration(seconds: 2),
-                                            ),
-                                          );
-                                        }
+
+                                      // 显示提示消息
+                                      if (mounted) {
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          if (value) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    '自动同步已开启，剪贴板内容将自动上传到服务器'),
+                                                backgroundColor: Colors.green,
+                                                duration: Duration(seconds: 2),
+                                              ),
+                                            );
+                                          }
+                                        });
                                       }
                                     },
                                     activeColor: const Color(0xFF007AFF),

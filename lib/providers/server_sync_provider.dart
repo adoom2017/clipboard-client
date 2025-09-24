@@ -76,8 +76,6 @@ class ServerSyncProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_sync_enabled', enabled);
 
-    _logger.info('自动同步已${enabled ? "开启" : "关闭"}');
-
     if (enabled) {
       // 如果开启了自动同步，立即进行一次同步
       await syncWithServer();
@@ -455,13 +453,13 @@ class ServerSyncProvider extends ChangeNotifier {
   void _setupClipboardListener() {
     // 监听ClipboardService的变化
     _clipboardService.addListener(_onClipboardChanged);
-    _logger.info('剪贴板监听已启用');
+    _logger.info('自动同步已启用');
   }
 
   // 移除剪贴板监听器
   void _removeClipboardListener() {
     _clipboardService.removeListener(_onClipboardChanged);
-    _logger.info('剪贴板监听已禁用');
+    _logger.info('自动同步已禁用');
   }
 
   // 剪贴板变化处理
