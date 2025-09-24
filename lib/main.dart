@@ -1,21 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:window_manager/window_manager.dart';
 import 'models/clipboard_item.dart';
 import 'providers/auth_provider.dart';
 import 'providers/server_sync_provider.dart';
 import 'services/clipboard_service.dart';
 import 'services/api_service.dart';
+import 'services/window_service.dart';
 import 'pages/login_page.dart';
 import 'pages/main_page.dart';
 import 'pages/change_password_page.dart';
 import 'utils/logger.dart';
 
+// 窗口事件监听器
+class MyWindowListener extends WindowListener {
+  @override
+  void onWindowClose() async {
+    // 关闭窗口时隐藏窗口而不是退出应用
+    await windowManager.hide();
+    // 防止应用关闭
+    await windowManager.setPreventClose(true);
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 初始化窗口管理器
+  await windowManager.ensureInitialized();
+
+  // 设置窗口属性
+  WindowOptions windowOptions = const WindowOptions(
+    size: Size(800, 600),
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.normal,
+  );
+
+  await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
+
+  // 窗口关闭时隐藏而不是退出应用
+  windowManager.setPreventClose(true);
+  windowManager.addListener(MyWindowListener());
+
+  // 初始化热键管理器
+  // 对于热重载，需要先注销所有热键
+  await hotKeyManager.unregisterAll();
+
   // 初始化日志系统
   AppLogger.init();
+
+  // 初始化窗口服务（注册全局热键和系统托盘）
+  final windowService = WindowService();
+  await windowService.init();
+  await windowService.initTrayMenu();
 
   // 初始化ApiService（加载保存的baseUrl）
   await ApiService().initializeApi();

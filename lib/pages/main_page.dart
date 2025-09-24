@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/server_sync_provider.dart';
 import '../services/clipboard_service.dart';
 import '../services/clipboard_watcher_service.dart';
+import '../services/window_service.dart';
 import '../widgets/clipboard_item_widget.dart';
 import '../utils/logger.dart';
 import 'settings_page.dart';
@@ -187,6 +188,20 @@ class _MainPageState extends State<MainPage>
                 ),
               ),
               actions: [
+                // 窗口最小化按钮 (Ctrl+Alt+C)
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: _buildStatusButton(
+                    icon: Icons.keyboard_arrow_down_rounded,
+                    color: Colors.blue,
+                    onTap: () {
+                      _showHotkeyInfo();
+                      // 最小化窗口
+                      WindowService().toggleVisibility();
+                    },
+                    tooltip: '隐藏窗口 (Ctrl+Alt+C)',
+                  ),
+                ),
                 // 剪贴板监听状态指示器
                 Container(
                   margin: const EdgeInsets.only(right: 8),
@@ -1315,5 +1330,16 @@ class _MainPageState extends State<MainPage>
     } else {
       return '晚上好';
     }
+  }
+
+  // 显示热键信息
+  void _showHotkeyInfo() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('按 Ctrl+Alt+C 可随时显示/隐藏窗口'),
+        duration: Duration(seconds: 3),
+        backgroundColor: Colors.blueGrey,
+      ),
+    );
   }
 }
