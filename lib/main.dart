@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -28,38 +29,41 @@ class MyWindowListener extends WindowListener {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 初始化窗口管理器
-  await windowManager.ensureInitialized();
-
-  // 设置窗口属性
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(800, 600),
-    center: true,
-    backgroundColor: Colors.transparent,
-    skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.normal,
-  );
-
-  await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
-
-  // 窗口关闭时隐藏而不是退出应用
-  windowManager.setPreventClose(true);
-  windowManager.addListener(MyWindowListener());
-
-  // 初始化热键管理器
-  // 对于热重载，需要先注销所有热键
-  await hotKeyManager.unregisterAll();
-
   // 初始化日志系统
   AppLogger.init();
 
-  // 初始化窗口服务（注册全局热键和系统托盘）
-  final windowService = WindowService();
-  await windowService.init();
-  await windowService.initTrayMenu();
+  // 只在桌面平台初始化窗口管理器和热键功能
+  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+    // 初始化窗口管理器
+    await windowManager.ensureInitialized();
+
+    // 设置窗口属性
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(600, 1000),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.normal,
+    );
+
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+
+    // 窗口关闭时隐藏而不是退出应用
+    windowManager.setPreventClose(true);
+    windowManager.addListener(MyWindowListener());
+
+    // 初始化热键管理器
+    // 对于热重载，需要先注销所有热键
+    await hotKeyManager.unregisterAll();
+
+    // 初始化窗口服务（注册全局热键和系统托盘）
+    final windowService = WindowService();
+    await windowService.init();
+    await windowService.initTrayMenu();
+  }
 
   // 初始化ApiService（加载保存的baseUrl）
   await ApiService().initializeApi();
