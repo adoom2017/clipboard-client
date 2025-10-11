@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/server_sync_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/api_service.dart';
+import '../services/translation_service.dart';
 import '../utils/logger.dart';
 import 'change_password_page.dart';
 
@@ -17,11 +19,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
   final _formKey = GlobalKey<FormState>();
   final _baseUrlController = TextEditingController();
+  final _tokenController = TextEditingController();
   final _apiService = ApiService();
 
   bool _isLoading = false;
   bool _isConnecting = false;
+  bool _isTestingTranslation = false;
   String? _connectionStatus;
+  String _selectedModel = SettingsProvider.getAvailableModels().first;
 
   @override
   void initState() {
@@ -32,12 +37,18 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void dispose() {
     _baseUrlController.dispose();
+    _tokenController.dispose();
     super.dispose();
   }
 
   void _loadCurrentSettings() {
     _baseUrlController.text =
         _apiService.currentBaseUrl.replaceAll('/api/v1', '');
+
+    final settingsProvider =
+        Provider.of<SettingsProvider>(context, listen: false);
+    _tokenController.text = settingsProvider.translationToken ?? '';
+    _selectedModel = settingsProvider.translationModel;
   }
 
   Future<void> _testConnection() async {
@@ -78,7 +89,11 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
+      // 保存API服务器设置
       await _apiService.updateBaseUrl(_baseUrlController.text.trim());
+
+      // 保存翻译设置
+      await _saveTranslationSettings();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -123,6 +138,120 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _testTranslation() async {
+    if (_isTestingTranslation) return;
+
+    final token = _tokenController.text.trim();
+    if (token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请先输入API Token'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isTestingTranslation = true;
+    });
+
+    try {
+      const testContent = 'Hello, World!';
+
+      final translationService = TranslationService();
+      final result = await translationService.translateText(
+        content: testContent,
+        token: token,
+        model: _selectedModel,
+      );
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 8),
+                Text('测试成功'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('原文: ${result.original}'),
+                const SizedBox(height: 8),
+                Text('翻译: ${result.translation}'),
+                const SizedBox(height: 8),
+                Text('语言: ${result.sourceLanguage} → ${result.targetLanguage}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('确定'),
+              ),
+            ],
+          ),
+        );
+        _logger.info('翻译测试成功');
+      }
+    } catch (e) {
+      _logger.warning('翻译测试失败: $e');
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.error, color: Colors.red),
+                SizedBox(width: 8),
+                Text('测试失败'),
+              ],
+            ),
+            content: Text('测试失败: $e'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('确定'),
+              ),
+            ],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTestingTranslation = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveTranslationSettings() async {
+    final settingsProvider =
+        Provider.of<SettingsProvider>(context, listen: false);
+
+    final token = _tokenController.text.trim();
+
+    try {
+      final tokenSuccess = await settingsProvider.setTranslationToken(
+        token.isEmpty ? null : token,
+      );
+      final modelSuccess =
+          await settingsProvider.setTranslationModel(_selectedModel);
+
+      if (!tokenSuccess || !modelSuccess) {
+        throw Exception('保存翻译设置失败');
+      }
+    } catch (e) {
+      _logger.severe('保存翻译设置失败', e);
+      rethrow;
+    }
+  }
+
   String? _validateUrl(String? value) {
     if (value == null || value.trim().isEmpty) {
       return '请输入服务器地址';
@@ -159,6 +288,54 @@ class _SettingsPageState extends State<SettingsPage> {
       final minute = dateTime.minute.toString().padLeft(2, '0');
       return '$year-$month-$day $hour:$minute';
     }
+  }
+
+  void _showTokenHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.help_outline, color: Color(0xFF9C27B0)),
+            SizedBox(width: 8),
+            Text('获取API Token'),
+          ],
+        ),
+        content: const SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '如何获取SiliconFlow API Token：',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              SizedBox(height: 8),
+              Text('1. 访问 https://cloud.siliconflow.cn/'),
+              Text('2. 注册并登录账户'),
+              Text('3. 进入控制台 -> API密钥'),
+              Text('4. 创建新的API密钥'),
+              Text('5. 复制密钥并粘贴到此处'),
+              SizedBox(height: 12),
+              Text(
+                '注意：',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600, color: Colors.orange),
+              ),
+              Text('• 请妥善保管您的API密钥'),
+              Text('• 密钥具有完整的账户权限'),
+              Text('• 建议定期更换密钥'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -548,6 +725,238 @@ class _SettingsPageState extends State<SettingsPage> {
                   ],
                 ),
               ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // 翻译设置卡片
+            Consumer<SettingsProvider>(
+              builder: (context, settingsProvider, child) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF9C27B0).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.translate_rounded,
+                                color: Color(0xFF9C27B0),
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              '翻译设置',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (settingsProvider.isTranslationConfigured
+                                        ? Colors.green
+                                        : Colors.grey)
+                                    .withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: settingsProvider
+                                              .isTranslationConfigured
+                                          ? Colors.green
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    settingsProvider.isTranslationConfigured
+                                        ? '已配置'
+                                        : '未配置',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: settingsProvider
+                                              .isTranslationConfigured
+                                          ? Colors.green
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // API Token输入框
+                        const Text(
+                          'SiliconFlow API Token',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _tokenController,
+                          obscureText: true,
+                          decoration: InputDecoration(
+                            hintText: '请输入您的API Token',
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            filled: true,
+                            fillColor: const Color(0xFFF2F2F7),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF9C27B0),
+                                width: 2,
+                              ),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.help_outline),
+                              onPressed: () => _showTokenHelpDialog(),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // 模型选择
+                        const Text(
+                          '翻译模型',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF2F2F7),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedModel,
+                              isExpanded: true,
+                              items: SettingsProvider.getAvailableModels()
+                                  .map((model) {
+                                return DropdownMenuItem<String>(
+                                  value: model,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        SettingsProvider.getModelDisplayName(
+                                            model),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                      Text(
+                                        model,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _selectedModel = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // 测试翻译按钮
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed:
+                                _isTestingTranslation ? null : _testTranslation,
+                            icon: _isTestingTranslation
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.translate, size: 16),
+                            label:
+                                Text(_isTestingTranslation ? '测试中...' : '测试翻译'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF9C27B0),
+                              side: const BorderSide(color: Color(0xFF9C27B0)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 16),

@@ -7,6 +7,7 @@ import 'package:window_manager/window_manager.dart';
 import 'models/clipboard_item.dart';
 import 'providers/auth_provider.dart';
 import 'providers/server_sync_provider.dart';
+import 'providers/settings_provider.dart';
 import 'services/clipboard_service.dart';
 import 'services/api_service.dart';
 import 'services/window_service.dart';
@@ -96,6 +97,9 @@ class ClipboardApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) => ServerSyncProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => SettingsProvider(),
         ),
         ChangeNotifierProvider(
           create: (context) => ClipboardService.instance,

@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/clipboard_item.dart';
 import '../providers/server_sync_provider.dart';
+import '../providers/settings_provider.dart';
+import '../services/translation_service.dart';
 import '../utils/logger.dart';
 
 class ClipboardItemWidget extends StatefulWidget {
@@ -26,6 +28,8 @@ class ClipboardItemWidget extends StatefulWidget {
 class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
   bool _isLoading = false;
   bool _isExpanded = false;
+  bool _isTranslating = false;
+  String? _translationResult;
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +122,66 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
                       maxLines: _isExpanded ? null : 2,
                       overflow: _isExpanded ? null : TextOverflow.ellipsis,
                     ),
+                    // Translation result display
+                    if (_translationResult != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF007AFF).withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFF007AFF).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.translate_rounded,
+                                  size: 16,
+                                  color: Color(0xFF007AFF),
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  '翻译结果',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF007AFF),
+                                  ),
+                                ),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _translationResult = null;
+                                    });
+                                  },
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    size: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _translationResult!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                height: 1.3,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     // Action buttons row
                     const SizedBox(height: 12),
                     Row(
@@ -181,6 +245,39 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
                                 ),
                               const SizedBox(width: 8),
                             ],
+                            // Translation button
+                            Consumer<SettingsProvider>(
+                              builder: (context, settingsProvider, child) {
+                                final isConfigured =
+                                    settingsProvider.isTranslationConfigured;
+                                return _isTranslating
+                                    ? Container(
+                                        width: 32,
+                                        height: 32,
+                                        padding: const EdgeInsets.all(6),
+                                        child: const CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            Color(0xFF9C27B0),
+                                          ),
+                                        ),
+                                      )
+                                    : _buildActionButton(
+                                        icon: Icons.translate_rounded,
+                                        onPressed: isConfigured
+                                            ? () => _handleTranslation(
+                                                settingsProvider)
+                                            : null,
+                                        tooltip:
+                                            isConfigured ? '翻译' : '请先配置翻译设置',
+                                        color: isConfigured
+                                            ? const Color(0xFF9C27B0)
+                                            : Colors.grey,
+                                      );
+                              },
+                            ),
+                            const SizedBox(width: 8),
                             _buildActionButton(
                               icon: Icons.content_copy_rounded,
                               onPressed: _copyToClipboard,
@@ -285,6 +382,96 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
     }
 
     widget.onSync?.call();
+  }
+
+  void _handleTranslation(SettingsProvider settingsProvider) async {
+    if (_isTranslating || !settingsProvider.validateTranslationConfig()) {
+      return;
+    }
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final content = widget.item.content.trim();
+
+    if (content.isEmpty) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('内容为空，无法翻译'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isTranslating = true;
+      _translationResult = null;
+    });
+
+    try {
+      ClipboardItemWidget._logger.info('开始翻译内容: ${widget.item.id}');
+
+      final translationService = TranslationService();
+      final result = await translationService.translateText(
+        content: content,
+        token: settingsProvider.translationToken!,
+        model: settingsProvider.translationModel,
+      );
+
+      if (mounted) {
+        setState(() {
+          _translationResult = result.translation;
+        });
+
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.translate_rounded, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                    '翻译完成 (${result.sourceLanguage} → ${result.targetLanguage})'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF9C27B0),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+
+        ClipboardItemWidget._logger.info('翻译完成: ${widget.item.id}');
+      }
+    } on TranslationException catch (e) {
+      ClipboardItemWidget._logger.warning('翻译失败: ${e.message}');
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('翻译失败: ${e.message}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      ClipboardItemWidget._logger.severe('翻译出错: ${widget.item.id}', e);
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('翻译出错: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTranslating = false;
+        });
+      }
+    }
   }
 
   void _copyToClipboard() async {
