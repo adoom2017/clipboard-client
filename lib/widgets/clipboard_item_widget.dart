@@ -155,6 +155,24 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
                                   ),
                                 ),
                                 const Spacer(),
+                                // Copy translation button
+                                GestureDetector(
+                                  onTap: () => _copyTranslationToClipboard(),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF007AFF)
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Icon(
+                                      Icons.content_copy_rounded,
+                                      size: 14,
+                                      color: Color(0xFF007AFF),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
                                 GestureDetector(
                                   onTap: () {
                                     setState(() {
@@ -170,12 +188,30 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              _translationResult!,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                height: 1.3,
-                                color: Colors.black87,
+                            Tooltip(
+                              message: '点击复制翻译结果',
+                              child: GestureDetector(
+                                onTap: () => _copyTranslationToClipboard(),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: Colors.grey.withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _translationResult!,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      height: 1.3,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -537,6 +573,35 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
             ],
           ),
           backgroundColor: const Color(0xFF34C759),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _copyTranslationToClipboard() async {
+    if (_translationResult == null) return;
+
+    // 复制翻译结果到系统剪贴板
+    await Clipboard.setData(ClipboardData(text: _translationResult!));
+
+    ClipboardItemWidget._logger.info('复制翻译结果到剪贴板: ${widget.item.id}');
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.translate_rounded, color: Colors.white),
+              SizedBox(width: 8),
+              Text('翻译结果已复制到剪贴板'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF9C27B0),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
